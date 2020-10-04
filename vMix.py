@@ -20,7 +20,7 @@ class VMix:
         except ConnectionRefusedError:
             print(sys.exc_info()[0])
             logger.error(f'VMix._connect : Error with _connect : ConnectionRefusedError {sys.exc_info()[0]}')
-        logger.info(f'{self.s.recv(1024)}')
+        #logger.info(f'{self.s.recv(1024)}')
     '''
     except OSError as err:
         print("OS error: {0}".format(err))
@@ -34,6 +34,7 @@ class VMix:
 
     def _refresh(self):
         self._connect()
+        self._execulte('XML')
         pass
     def setValue(self, name, value):
         try:
