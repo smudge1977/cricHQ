@@ -20,6 +20,9 @@ class VMix:
         except ConnectionRefusedError:
             print(sys.exc_info()[0])
             logger.error(f'VMix._connect : Error with _connect : ConnectionRefusedError {sys.exc_info()[0]}')
+        except:
+            logger.error(f'VMix._connect : Error with _connect : {sys.exc_info()[0]}')
+            raise
         #logger.info(f'{self.s.recv(1024)}')
     '''
     except OSError as err:
@@ -30,11 +33,18 @@ class VMix:
         print("Unexpected error:", sys.exc_info()[0])
         raise
     '''
-
+    def _execute(self, command):
+        logger.info(f'VMix._execute : command : {command}')
+        try:
+            self.s.sendall(command)
+        except:
+            logger.debug(f'VMix._execute : Socket not open so reconnect...')
+            self._connect()
+        return True
 
     def _refresh(self):
-        self._connect()
-        self._execulte('XML')
+
+        self._execute('XML')
         pass
     def setValue(self, name, value):
         try:
