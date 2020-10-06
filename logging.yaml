@@ -24,9 +24,19 @@ handlers:
 
 loggers:
 
-    qsoWidget:
+    VMixExample:
         level: INFO
         handlers: [console]
+        propagate: yes
+
+    vMix:
+        level: INFO
+        handlers: [console]
+        propagate: yes
+
+    vMix:
+        level: DEBUG
+        handlers: [file]
         propagate: yes
 
     __main__:   
