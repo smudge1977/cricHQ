@@ -30,7 +30,7 @@ loggers:
         propagate: yes
 
     vMix:
-        level: INFO
+        level: DEBUG
         handlers: [console]
         propagate: yes
 
@@ -40,7 +40,7 @@ loggers:
         propagate: yes
 
     __main__:   
-        level: DEBUG
+        level: INFO
         handlers: [console,file]
         propagate: yes
         
