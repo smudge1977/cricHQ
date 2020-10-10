@@ -15,3 +15,5 @@
 CricHQ.log*
 CricHQ support.docx
 cricHQzeroConf.py
+/build
+/dist
