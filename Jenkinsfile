@@ -6,7 +6,7 @@ pipeline {
         label 'w10 && python'
       }
       steps {
-        sh 'null'
+        sh 'fsdfsd'
         bat(script: 'packaging/build.cmd', returnStdout: true)
       }
     }
