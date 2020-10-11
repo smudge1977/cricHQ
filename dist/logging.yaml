@@ -20,13 +20,13 @@ handlers:
         backupCount: 5
         level: DEBUG
         formatter: complex
-        filename : CricHQ.log
+        filename : %temp%\CricHQ.log
 
 loggers:
 
     VMixExample:
         level: INFO
-        handlers: [console]
+        handlers: [console,file]
         propagate: yes
 
     vMix:
@@ -41,6 +41,11 @@ loggers:
 
     __main__:   
         level: INFO
-        handlers: [console,file]
+        handlers: [console]
+        propagate: yes
+
+    __main__:   
+        level: DEBUG
+        handlers: [file]
         propagate: yes
         

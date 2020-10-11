@@ -18,3 +18,4 @@ cricHQzeroConf.py
 /build
 /dist/CricHQServer/
 CricHQServer.spec
+dist/CricHQServer.exe
