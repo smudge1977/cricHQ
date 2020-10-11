@@ -10,14 +10,14 @@ pipeline {
       }
     }
 
-    stage('Deploy to test vMix') {
-      agent {
-        label 'vMix'
-      }
-      steps {
-        bat 'dist\\run.cmd'
-      }
-    }
+    // stage('Deploy to test vMix') {
+    //   agent {
+    //     label 'vMix'
+    //   }
+    //   steps {
+    //     bat 'dist\\run.cmd'
+    //   }
+    // }
 
   }
 }
