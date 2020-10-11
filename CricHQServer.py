@@ -16,7 +16,7 @@ Dependancies:
 
 "On Windows, you can install the Bonjour SDK which is downloadable at developer.apple.com/opensource/,
  click on Command Line Tools and search for dns-sd or bonjour sdk"
-
+https://developer.apple.com/download/more/?=Bonjour%20SDK%20for%20Windows
 
     This then allows the iPhone / iPad device to find the 'scorboard' i.e. the server we are running.
 '''
