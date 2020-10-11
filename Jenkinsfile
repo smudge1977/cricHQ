@@ -15,7 +15,7 @@ pipeline {
         label 'vMix'
       }
       steps {
-        sh 'mvn -B clean verify'
+        bat 'dist\\run.cmd'
       }
     }
 
