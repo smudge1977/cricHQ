@@ -14,6 +14,10 @@ Dependancies:
     You need to register the server machine in mDNS with the following command:
     dns-sd -R scoreboard _cricviewing._tcp. local 9090 localhost 127.0.0.1
 
+"On Windows, you can install the Bonjour SDK which is downloadable at developer.apple.com/opensource/,
+ click on Command Line Tools and search for dns-sd or bonjour sdk"
+
+
     This then allows the iPhone / iPad device to find the 'scorboard' i.e. the server we are running.
 '''
 
