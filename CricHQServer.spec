@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['CricHQServer.py'],
-             pathex=['C:\\src\\cricHQ'],
+             pathex=['C:\\Jenkins\\workspace\\cricHQ_master'],
              binaries=[],
              datas=[],
              hiddenimports=[],
