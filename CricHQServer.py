@@ -73,6 +73,8 @@ def recv_msg2(sock):
     return full_msg
 
 def computegetScoreCard(scorecardstr):
+    ACTIVE_SYM = '*'
+    INACTIVE_SYM = ' '
     if scorecardstr == "":
         logger.error('No scorecard passed')
     else:
@@ -97,10 +99,41 @@ def computegetScoreCard(scorecardstr):
             else:
                 vMix.setValue('firstInningsScore','0')
             vMix.setValue('extraPoints',y['inningsScorecards'][-1]['stats']['extraPoints'])
+
+
         elif y.get('methodCaller') == 'getDuckworthLewisStern':
             logger.info(f'CricHQ.Scores1.computegetScorecard : getDuckworthLewisStern : {str(scorecardstr)}')
             vMix.setValue('oversRemaining',int(y['oversRemainingIncludingBreaks']))
             vMix.setValue('dlsParScore',y['parScore'])
+        elif y.get('methodCaller')== 'getMatchScoreView':
+            logger.info(f'CricHQ.Scores1.computegetScorecard : getMatchScoreView : {str(scorecardstr)}')
+        elif y.get('methodCaller')== 'getBattingBowlingView':
+            logger.info(f'CricHQ.Scores1.computegetScorecard : getMatchScoreView : {str(scorecardstr)}')
+            if y['facingBatsmanStats']['batterOrderIndex'] < y['nonFacingBatsmanStats']['batterOrderIndex']:
+                faceing = 1
+                nonFaceing = 2
+            else:
+                faceing = 2
+                nonFaceing = 1
+            vMix.setValue(f'batterName{faceing}',y['facingBatsmanStats']['batter']['name'].split(' ')[-1].upper())
+            vMix.setValue(f'batterScore{faceing}',y['facingBatsmanStats']['score'])
+            vMix.setValue(f'batterActive{faceing}',ACTIVE_SYM)
+            
+            vMix.setValue(f'batterName{nonFaceing}',y['nonFacingBatsmanStats']['batter']['name'].split(' ')[-1].upper())
+            vMix.setValue(f'batterScore{nonFaceing}',y['nonFacingBatsmanStats']['score'])
+            vMix.setValue(f'batterActive{nonFaceing}',INACTIVE_SYM)
+
+            if y['bowlerStats']['bowler']['id'] < y['nonActiveBowlerStats']['bowler']['id']:
+                active = 1
+                nonactive = 2
+            else:
+                active = 2
+                nonactive = 1
+            vMix.setValue(f'bowlerName{active}',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
+            vMix.setValue(f'bowlerActive{active}', ACTIVE_SYM)
+            vMix.setValue(f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].split(' ')[-1].upper())
+            vMix.setValue(f'bowlerActive{nonactive}', INACTIVE_SYM)
+
         else:
             logger.error(f'methodCaller {y.get("methodCaller")} not defined!')
 
@@ -140,6 +173,13 @@ def cricHQServer():
             send_msg2(clientsocket,'{"method": "getMatchScoreView", "apiVersion": "1.1.2" }')
             getMatchScoreView = recv_msg2(clientsocket)
             logger.info('getMatchScoreView : %s',getMatchScoreView)
+            computegetScoreCard(getMatchScoreView)
+            
+            send_msg2(clientsocket,'{"method": "getBattingBowlingView", "apiVersion": "1.1.2" }')
+            computegetScoreCard(recv_msg2(clientsocket))
+
+            
+
             send_msg2(clientsocket,'{"method": "getTickerTape", "apiVersion": "1.1.2" }')
             getTickerTape = recv_msg2(clientsocket)
             logger.info('getTickerTape : %s',getTickerTape)
