@@ -161,6 +161,7 @@ def cricHQServer():
     while True:
         # now our endpoint knows about the OTHER endpoint.
         logger.info('Waiting %s...' % s)
+        print('CricHQ server waiting...')
         clientsocket, address = s.accept()
         print(f"Connection from {address} has been established.")
         with clientsocket:
@@ -171,7 +172,8 @@ def cricHQServer():
 
             msg = recv_msg2(clientsocket)
             logger.info('Received : %s',msg)
-            
+            print(f'Received {msg}')
+
             logger.info('Send request getScorecard after inital client connection')
             #clientsocket.sendall(req)
             send_msg2(clientsocket,'{"method": "getScorecard", "apiVersion": "1.1.2" }')
