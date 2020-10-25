@@ -2,7 +2,7 @@ call venv\Scripts\activate.bat
 :loop
 
 echo start
-"CricHQServer.py"  2>&1 
+"CricHQServer.py"  2>crash.log 
 echo end
 
 goto loop
