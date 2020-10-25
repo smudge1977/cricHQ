@@ -82,27 +82,37 @@ def computegetScoreCard(scorecardstr):
             y = json.loads(scorecardstr)
         except json.JSONDecodeError:
             logger.error(f'CricHQserver : computegetScreCard problem with data {scorecardstr}')
-            raise
+            return
         if y.get('methodCaller') == 'getScorecard':
             logger.info(f'CricHQ.Scores1.computegetScorecard : getscorecard : {str(scorecardstr)}')
-            stats = y.get('inningsScorecards')[-1].get('stats')
-            vMix.setValue('score',stats.get('score'))
-            vMix.setValue('overIndex',stats.get('overIndex'))
-            vMix.setValue('wicketCount',stats.get('wicketCount'))
-            vMix.setValue('extraPoints',stats.get('extraPoints'))
-            vMix.setValue('rpo',int(stats.get('rpo')))
+            try:
+                stats = y.get('inningsScorecards')[-1].get('stats')
+                vMix.setValue('score',stats.get('score'))
+                vMix.setValue('overIndex',stats.get('overIndex'))
+                vMix.setValue('wicketCount',stats.get('wicketCount'))
+                vMix.setValue('extraPoints',stats.get('extraPoints'))
+                vMix.setValue('rpo',int(stats.get('rpo')))
+                if y['inningsIndex'] > 0:
+                    # have a first Innings score
+                    vMix.setValue('firstInningsScore',y['inningsScorecards'][0]['stats']['score'])
+                else:
+                    vMix.setValue('firstInningsScore','0')
+                vMix.setValue('extraPoints',y['inningsScorecards'][-1]['stats']['extraPoints'])
+            except IndexError:
+                vMix.setValue('score', '0')
+                vMix.setValue('overIndex','0')
+                vMix.setValue('wicketCount','0')
+                vMix.setValue('extraPoints','0')
+                vMix.setValue('rpo','0')
+                vMix.setValue('firstInningsScore','0')
+                vMix.setValue('extraPoints','0')
             if y['isHomeTeamBatting']:
                 vMix.setValue('battingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['homeTeamBasic']['name'])[0].upper()) # use regex to split space comma etc.
                 vMix.setValue('bowlingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['awayTeamBasic']['name'])[0].upper())
             else:
                 vMix.setValue('bowlingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['homeTeamBasic']['name'])[0].upper())
                 vMix.setValue('battingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['awayTeamBasic']['name'])[0].upper())
-            if y['inningsIndex'] > 0:
-                # have a first Innings score
-                vMix.setValue('firstInningsScore',y['inningsScorecards'][0]['stats']['score'])
-            else:
-                vMix.setValue('firstInningsScore','0')
-            vMix.setValue('extraPoints',y['inningsScorecards'][-1]['stats']['extraPoints'])
+            
 
 
         elif y.get('methodCaller') == 'getDuckworthLewisStern':

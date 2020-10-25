@@ -13,10 +13,10 @@ class VMix:
     def __init__(self, ip='127.0.0.1'):
         self.logger = logging.getLogger(__name__)
         self.logger.debug('{} initialized')
-        print('************************')
+        #print('************************')
         
         self.vMixIP = ip
-        self._NameValues = {'TCSld460' : { 'current' : 'BAT NAME 1', 'pending' : 'BAT NAME 1', 'inputs' : ['c3998cb4-afbc-4411-b1b9-c3dc10f02d4d']}}
+        #self._NameValues = {'TCSld460' : { 'current' : 'BAT NAME 1', 'pending' : 'BAT NAME 1', 'inputs' : ['c3998cb4-afbc-4411-b1b9-c3dc10f02d4d']}}
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.vMixXML = ''
         self.vMixXMLtime = datetime.datetime.now()
@@ -102,7 +102,7 @@ class VMix:
         self.logger.info(f'VMix._processXML start time : {starttime}')
         self.vMixXML = xml
         # Just going to build _disired and _actual on the fly by request instead
-        self.logger.info(f'VMix._processXML done in : {datetime.datetime.now() - starttime} : result is : {self._NameValues}')
+        self.logger.info(f'VMix._processXML done in : {datetime.datetime.now() - starttime}')
         pass
     def setValue(self, name, value):
         self._desired[name] = value
