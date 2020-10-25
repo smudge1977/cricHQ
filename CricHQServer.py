@@ -78,7 +78,11 @@ def computegetScoreCard(scorecardstr):
     if scorecardstr == "":
         logger.error('No scorecard passed')
     else:
-        y = json.loads(scorecardstr)
+        try:
+            y = json.loads(scorecardstr)
+        except json.JSONDecodeError:
+            logger.error(f'CricHQserver : computegetScreCard problem with data {scorecardstr}')
+            raise
         if y.get('methodCaller') == 'getScorecard':
             logger.info(f'CricHQ.Scores1.computegetScorecard : getscorecard : {str(scorecardstr)}')
             stats = y.get('inningsScorecards')[-1].get('stats')
@@ -122,18 +126,19 @@ def computegetScoreCard(scorecardstr):
             vMix.setValue(f'batterName{nonFaceing}',y['nonFacingBatsmanStats']['batter']['name'].split(' ')[-1].upper())
             vMix.setValue(f'batterScore{nonFaceing}',y['nonFacingBatsmanStats']['score'])
             vMix.setValue(f'batterActive{nonFaceing}',INACTIVE_SYM)
-
-            if y['bowlerStats']['bowler']['id'] < y['nonActiveBowlerStats']['bowler']['id']:
-                active = 1
-                nonactive = 2
-            else:
-                active = 2
-                nonactive = 1
-            vMix.setValue(f'bowlerName{active}',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
-            vMix.setValue(f'bowlerActive{active}', ACTIVE_SYM)
-            vMix.setValue(f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].split(' ')[-1].upper())
-            vMix.setValue(f'bowlerActive{nonactive}', INACTIVE_SYM)
-
+            try:
+                if y['bowlerStats']['bowler']['id'] < y['nonActiveBowlerStats']['bowler']['id']:
+                    active = 1
+                    nonactive = 2
+                else:
+                    active = 2
+                    nonactive = 1
+                vMix.setValue(f'bowlerName{active}',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
+                vMix.setValue(f'bowlerActive{active}', ACTIVE_SYM)
+                vMix.setValue(f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].split(' ')[-1].upper())
+                vMix.setValue(f'bowlerActive{nonactive}', INACTIVE_SYM)
+            except KeyError:
+                logging.warn(f'CricHQServer: getScorecard : keyError {str(y)}')
         else:
             logger.error(f'methodCaller {y.get("methodCaller")} not defined!')
 

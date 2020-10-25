@@ -41,6 +41,6 @@ loggers:
 
     __main__:   
         level: INFO
-        handlers: [console,file]
+        handlers: [file]
         propagate: yes
         

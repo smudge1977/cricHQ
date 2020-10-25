@@ -115,18 +115,22 @@ class VMix:
             self.logger.info(f'VMix.setValue need to update {name} from UNKOWN to {self._desired[name]}')
         
         #* Put this bit in its own thread to allow high speed data like timing to be push at vMix faster than it can be updated
+        if (datetime.datetime.now() - self.vMixXMLtime) >  datetime.timedelta(minutes = 1):
+            self.logger.info(f'VMix._processValues Refresh vMIX XML as it is stale {str((datetime.datetime.now() - self.vMixXMLtime))}')
+            self._execute('XML')
         starttime = datetime.datetime.now()
-        self.logger.info(f'VMix._processValues start time : {starttime}')
+        self.logger.info(f'VMix._processValues start time : {starttime}, {str(self._desired)} {self.vMixXML}')
         for k, v in self._desired.items():
             if self._desired[k] is not self._actual[k]:
                 # Do find and update
-                if self.vMixXML == '':
+                if self.vMixXML == '':# or 
                     #* Improve to update old XML
                     self.logger.info(f'VMIX.Update : no XML')
                     self._execute('XML')
-                root = etree.fromstring(self.vMixXML)
-                for element in root.xpath(f"//text[@name='{k}']"):
-                    self._execute(f'FUNCTION SetText Input={element.getparent().get("key")}&SelectedName={k}&Value={v}')
+                else:
+                    root = etree.fromstring(self.vMixXML)
+                    for element in root.xpath(f"//text[@name='{k}']"):
+                        self._execute(f'FUNCTION SetText Input={element.getparent().get("key")}&SelectedName={k}&Value={v}')
         self.logger.info(f'VMix._processValues done in : {datetime.datetime.now() - starttime}')
 
     def _command(self, command):
