@@ -55,9 +55,13 @@ class VMix:
             return False
         if command.startswith('FUNCTION'):
             self.s.setblocking(0)
-            self.s.settimeout(0.2)
-            response = self.s.recv(25)
-            response = response.decode('utf-8')
+            self.s.settimeout(0.5)
+            try:
+                response = self.s.recv(25)
+                response = response.decode('utf-8')
+            except TimeoutError:
+                response = ''
+                self.logging.error(f'Timed out waiting for a response from the vMix socket')
             self.logger.debug(f'VMix._execute : response from {command[:-2]} : {response}')
             if 'FUNCTION OK Completed' in response:
                 self.logger.info(f'VMix._execute : command : {command[:-2]} : OK')
