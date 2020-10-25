@@ -27,7 +27,7 @@ class VMix:
         try:
             self.s.connect((self.vMixIP, 8099))
             self.logger.info(f'{self.s.recv(1024)}')
-            self._execute('XML\r\n')    # whenever we connect the _execute will then call the xml processor 
+            self._execute('XML')    # whenever we connect the _execute will then call the xml processor 
         except ConnectionRefusedError as e:
             self.logger.error(f'VMix._connect : Error with _connect : ConnectionRefusedError {e}')
             return False
@@ -38,18 +38,19 @@ class VMix:
     def _execute(self, command, retry=3):
         if command[:-2] != '\r\n':
             command += '\r\n'
+        logging.info(f'vMix._execute : retry: {retry} : commnad: {command}')
         for i in range(retry):
             if self.__execute(command):
                 self.logger.debug(f'_execute retry count {i}')
                 break
         
     def __execute(self, command, _errCount=0):
-        self.logger.info(f'VMix._execute : command : {command}')
+        self.logger.info(f'VMix.__execute : command : {command}')
         #self.s.sendall(bytes(command,"utf-8"))
         try:
             self.s.sendall(bytes(command,"utf-8"))
         except OSError as e:
-            self.logger.debug(f'VMix._execute : Socket not open so reconnect... {e}')
+            self.logger.debug(f'VMix.__execute : Socket not open so reconnect... {e}')
             self._connect()
             #self._execute(command)
             return False
