@@ -9,6 +9,9 @@ from lxml import etree as ET
 import logging
 import re
 
+ACTIVE_SYM = '*'
+INACTIVE_SYM = ' '
+
 logger=logging.getLogger(__name__)
 
 async def data_to_json(data, length):
@@ -84,6 +87,7 @@ def vMix_setValue(vMix, name,value):
     return vMix
 
 async def process_getScorecard(vMix, y):
+    logger.info(f'getScorecard :{y}')
     if len(y.get('inningsScorecards')) > 0:
         stats = y.get('inningsScorecards')[-1].get('stats')   
         vMix = vMix_setValue(vMix,'score',stats.get('score'))
@@ -114,8 +118,53 @@ async def process_getScorecard(vMix, y):
     return vMix # So if we have reconnected or the XML state has been update
 
 
+async def process_getDuckworthLewisStern(vMix, y):
+    logger.info(f'getDuckworthLewisStern :{y}')
+    vMix = vMix_setValue(vMix,'oversRemaining',int(y['oversRemainingIncludingBreaks']))
+    vMix = vMix_setValue(vMix,'dlsParScore',y['parScore'])
+    return vMix
 
+async def process_getMatchScoreView(vMix, y):
+    logger.info(f'getMatchScoreView :{y}')
+    return vMix
 
+async def process_getBattingBowlingView(vMix, y):
+    logger.info(f'getBattingBowlingView :{y}')
+    # get we have enough data in y...
+    if y.get('facingBatsmanStats','') == '' or y.get('nonFacingBatsmanStats','') == '':
+        return vMix
+    if y['facingBatsmanStats']['batterOrderIndex'] < y['nonFacingBatsmanStats']['batterOrderIndex']:
+        faceing = 1
+        nonFaceing = 2
+    else:
+        faceing = 2
+        nonFaceing = 1
+    vMix = vMix_setValue(vMix,f'batterName{faceing}',y['facingBatsmanStats']['batter']['name'].split(' ')[-1].upper())
+    vMix = vMix_setValue(vMix,f'batterScore{faceing}',y['facingBatsmanStats']['score'])
+    vMix = vMix_setValue(vMix,f'batterActive{faceing}',ACTIVE_SYM)
+    
+    vMix = vMix_setValue(vMix,f'batterName{nonFaceing}',y['nonFacingBatsmanStats']['batter']['name'].split(' ')[-1].upper())
+    vMix = vMix_setValue(vMix,f'batterScore{nonFaceing}',y['nonFacingBatsmanStats']['score'])
+    vMix = vMix_setValue(vMix,f'batterActive{nonFaceing}',INACTIVE_SYM)
+    if y.get('bowlerStats','') == '' or y.get('nonActiveBowlerStats','') == '':
+        return vMix
+    if y['bowlerStats']['bowler']['id'] < y['nonActiveBowlerStats']['bowler']['id']:
+        active = 1
+        nonactive = 2
+    else:
+        active = 2
+        nonactive = 1
+    vMix = vMix_setValue(vMix,f'bowlerName{active}',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
+    vMix = vMix_setValue(vMix,f'bowlerActive{active}', ACTIVE_SYM)
+    vMix = vMix_setValue(vMix,f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].split(' ')[-1].upper())
+    vMix = vMix_setValue(vMix,f'bowlerActive{nonactive}', INACTIVE_SYM)
+    
+    
+    return vMix
+
+async def process_getTickerTape(vMix, y):
+    logger.info(f'getTickerTape :{y}')
+    return vMix
 
 async def handle_client(client):
     loop = asyncio.get_event_loop()
@@ -131,7 +180,16 @@ async def handle_client(client):
             if request.get('methodCaller') == 'getLastEvent':
                 data = await getAllCricHQ(loop, client)
             elif request.get('methodCaller') == 'getScorecard':
-                await process_getScorecard(vMix, request)
+                await process_getScorecard(vMix, request)            
+            elif request.get('methodCaller') == 'getDuckworthLewisStern':
+                await process_getDuckworthLewisStern(vMix, request)
+            elif request.get('methodCaller') == 'getMatchScoreView':
+                await process_getMatchScoreView(vMix, request)
+            elif request.get('methodCaller') == 'getBattingBowlingView':
+                await process_getBattingBowlingView(vMix, request)
+            elif request.get('methodCaller') == 'getTickerTape':
+                await process_getTickerTape(vMix, request)                
+                
         else:
             print('Request was a None so I think Close the client')
             if client is not None: client.close()
