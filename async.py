@@ -28,11 +28,14 @@ async def data_to_json(data, length):
         return None
     return x
 
-async def read_data(loop, client):
+async def read_data(loop, reader, writer):
     logger.setLevel(logging.INFO)
-    if client is None:
-        return
-    header = await loop.sock_recv(client, 8)
+    # if client is None:
+    #     return
+    try:
+        header = await reader.readexactly(8)
+    except asyncio.exceptions.IncompleteReadError:
+        return 'quit'
     logger.debug(f'Header : b{header}')
     
     length = int.from_bytes(header, byteorder="little")
@@ -43,7 +46,7 @@ async def read_data(loop, client):
     length += 2 # CR LF on the end
     lengthRemaining = length 
     while lengthRemaining > 0:
-        request += await loop.sock_recv(client, lengthRemaining) #.decode('utf8') # plus the CR LF on the end
+        request += await reader.readexactly(length) #.decode('utf8') # plus the CR LF on the end
         lengthRemaining = length - len(request)
         print(f'Remaining length {lengthRemaining} of {length}')
     logger.debug(f'Request : {request}')
@@ -53,13 +56,11 @@ async def read_data(loop, client):
     return payload
 
 
-async def write_data(loop, client, msg):
+def write_data(loop, reader, writer,  msg):
     data = len(msg).to_bytes(8, byteorder="little") + bytes(msg,"utf-8")
-    await loop.sock_sendall(client, data)
-    #loop.sock_
-    #return data
+    writer.write(data)
 
-async def getAllCricHQ(loop, client):
+async def getAllCricHQ(loop, reader, writer):
     commands = [
         '{"method": "getScorecard", "apiVersion": "1.1.2" }',
         '{"method": "getDuckworthLewisStern", "apiVersion": "1.1.2" }',
@@ -67,16 +68,9 @@ async def getAllCricHQ(loop, client):
         '{"method": "getBattingBowlingView", "apiVersion": "1.1.2" }',
         '{"method": "getTickerTape", "apiVersion": "1.1.2" }',
     ]
-    tasks = [
-        create_task(write_data(loop, client, commands[0])),
-        create_task(write_data(loop, client, commands[1])),
-        create_task(write_data(loop, client, commands[2])),
-        create_task(write_data(loop, client, commands[3])),
-        create_task(write_data(loop, client, commands[4])),
-    ]
-    await gather(*tasks)
-    print('Now have all data to process the scorecard')
-    return 'some stuff'
+    for command in commands:
+        write_data(loop, reader, writer, command)
+    return
 
 def vMix_setValue(vMix, name,value):
     vMixReader = vMix[0]
@@ -116,7 +110,6 @@ async def process_getScorecard(vMix, y):
         vMix = vMix_setValue(vMix,'bowlingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['homeTeamBasic']['name'])[0].upper())
         vMix = vMix_setValue(vMix,'battingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['awayTeamBasic']['name'])[0].upper())
     return vMix # So if we have reconnected or the XML state has been update
-
 
 async def process_getDuckworthLewisStern(vMix, y):
     logger.info(f'getDuckworthLewisStern :{y}')
@@ -166,50 +159,35 @@ async def process_getTickerTape(vMix, y):
     logger.info(f'getTickerTape :{y}')
     return vMix
 
-async def handle_client(client):
+async def handle_client(reader, writer):
     loop = asyncio.get_event_loop()
     request = None
-    data = ''
     vMix = await vMixClient()
-    while request != 'quit' and client is not None:
-
-        request = await read_data(loop, client)
+    while request != 'quit':
         logger.debug(f'Log {request}')
         if request is not None:
-            print(request.get('methodCaller'))
-            if request.get('methodCaller') == 'getLastEvent':
-                data = await getAllCricHQ(loop, client)
-            elif request.get('methodCaller') == 'getScorecard':
+            methodCaller = request.get('methodCaller')
+            logger.info(f'methodCaller: {methodCaller}')
+            if methodCaller == 'getLastEvent':
+                data = await getAllCricHQ(loop, reader, writer)
+            elif methodCaller == 'getScorecard':
                 await process_getScorecard(vMix, request)            
-            elif request.get('methodCaller') == 'getDuckworthLewisStern':
+            elif methodCaller == 'getDuckworthLewisStern':
                 await process_getDuckworthLewisStern(vMix, request)
-            elif request.get('methodCaller') == 'getMatchScoreView':
+            elif methodCaller == 'getMatchScoreView':
                 await process_getMatchScoreView(vMix, request)
-            elif request.get('methodCaller') == 'getBattingBowlingView':
+            elif methodCaller == 'getBattingBowlingView':
                 await process_getBattingBowlingView(vMix, request)
-            elif request.get('methodCaller') == 'getTickerTape':
+            elif methodCaller == 'getTickerTape':
                 await process_getTickerTape(vMix, request)                
-                
-        else:
-            print('Request was a None so I think Close the client')
-            if client is not None: client.close()
-        
-        #response = str(eval(request)) + '\n'
-        #await loop.sock_sendall(client, response.encode('utf8'))
-    if client is not None: client.close()
+        request = await read_data(loop, reader, writer)        
+    logger.info(f'Closing connection from ?')
+    writer.close()    
 
 async def run_cricHQ_server():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((socket.gethostname(), 9090))
-    server.listen(8)
-    server.setblocking(False)
-    loop = asyncio.get_event_loop()
-    vMixQ = asyncio.Queue()
-    while True:
-        
-        client, _ = await loop.sock_accept(server)
-        loop.create_task(handle_client(client))
-
+    server = await asyncio.start_server(handle_client, socket.gethostname(), 9090)
+    async with server:
+        await server.serve_forever()
 
 async def vMixClient(ip='127.0.0.1', port=8099):
     reader, writer = await asyncio.open_connection(
@@ -234,5 +212,4 @@ async def get_vMixXML(reader, writer):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    
     asyncio.run(run_cricHQ_server())
