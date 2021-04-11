@@ -12,6 +12,20 @@ import re
 ACTIVE_SYM = '*'
 INACTIVE_SYM = ' '
 
+wicketType = {
+    0   : 'Not out',
+    1   : 'Bowled',
+    2   : 'Caught',
+    3   : 'LBW',
+    4   : 'Stumped',
+    5   : 'Run Out',
+    6   : 'Hit Wicket',
+    7   : 'Handled Ball',
+    8   : 'Hit Twice',
+    9   : 'Timeout',
+    10  : 'Obstructing',
+}
+
 logger=logging.getLogger(__name__)
 
 async def data_to_json(data, length):
@@ -55,7 +69,6 @@ async def read_data(loop, reader, writer):
     logger.debug(f'Payload : {payload}')
     return payload
 
-
 def write_data(loop, reader, writer,  msg):
     data = len(msg).to_bytes(8, byteorder="little") + bytes(msg,"utf-8")
     writer.write(data)
@@ -80,8 +93,15 @@ def vMix_setValue(vMix, name,value):
         vMixWriter.write(f'FUNCTION SetText Input={element.getparent().get("key")}&SelectedName={name}&Value={value}\r\n'.encode('utf-8'))
     return vMix
 
+async def writeDumpFile(data, fileName):
+    with open(fileName,'w') as f:
+        f.write(json.dumps(data, indent=4, sort_keys=True))
+    
+    return
+
 async def process_getScorecard(vMix, y):
     logger.info(f'getScorecard :{y}')
+    await writeDumpFile(y, 'getScorecard.json')
     if len(y.get('inningsScorecards')) > 0:
         stats = y.get('inningsScorecards')[-1].get('stats')   
         vMix = vMix_setValue(vMix,'score',stats.get('score'))
@@ -89,7 +109,24 @@ async def process_getScorecard(vMix, y):
         vMix = vMix_setValue(vMix,'wicketCount',stats.get('wicketCount'))
         vMix = vMix_setValue(vMix,'extraPoints',stats.get('extraPoints'))
         vMix = vMix_setValue(vMix,'rpo',int(stats.get('rpo')))
-        vMix = vMix_setValue(vMix,'extraPoints',y['inningsScorecards'][-1]['stats']['extraPoints'])
+        # stats['wicketCount']
+        outOver = 0
+        lastBatter = None
+
+        for batter in y.get('inningsScorecards')[y['inningsIndex']].get('batterListStats'):
+            if batter['isDismissed']:
+                if batter['outAction']['overIndex'] >= outOver:  # gt or eq so hopefully two wickets in the same over work out right..??
+                    outOver = batter['outAction']['overIndex']
+                    lastBatter = batter
+                print(batter['outAction']['overIndex'])
+                print(batter['outAction']['wicketType'])
+        if lastBatter is None:
+            lastWkt = ''
+        else:
+            howOut = wicketType[lastBatter['outAction']['wicketType']]
+            who = lastBatter['batter']['name'].split(' ')[-1]
+            lastWkt = who + '\r\n' + howOut
+        vMix = vMix_setValue(vMix,'lastWkt', lastWkt)
     else:
         vMix = vMix_setValue(vMix,'score', '0')
         vMix = vMix_setValue(vMix,'overIndex','0')
@@ -98,6 +135,7 @@ async def process_getScorecard(vMix, y):
         vMix = vMix_setValue(vMix,'rpo','0')
         vMix = vMix_setValue(vMix,'firstInningsScore','0')
         vMix = vMix_setValue(vMix,'extraPoints','0')
+        vMix = vMix_setValue(vMix,'lastWkt','')
     if y.get('inningsIndex',-1) > 0:
         # have a first Innings score
         vMix = vMix_setValue(vMix,'firstInningsScore',y['inningsScorecards'][0]['stats']['score'])
@@ -113,16 +151,19 @@ async def process_getScorecard(vMix, y):
 
 async def process_getDuckworthLewisStern(vMix, y):
     logger.info(f'getDuckworthLewisStern :{y}')
+    await writeDumpFile(y, 'getDuckworthLewisStern.json')
     vMix = vMix_setValue(vMix,'oversRemaining',int(y['oversRemainingIncludingBreaks']))
     vMix = vMix_setValue(vMix,'dlsParScore',y['parScore'])
     return vMix
 
 async def process_getMatchScoreView(vMix, y):
     logger.info(f'getMatchScoreView :{y}')
+    await writeDumpFile(y, 'getMatchScoreView.json')
     return vMix
 
 async def process_getBattingBowlingView(vMix, y):
     logger.info(f'getBattingBowlingView :{y}')
+    await writeDumpFile(y, 'getBattingBowlingView.json')
     # get we have enough data in y...
     if y.get('facingBatsmanStats','') == '' or y.get('nonFacingBatsmanStats','') == '':
         return vMix
@@ -157,6 +198,7 @@ async def process_getBattingBowlingView(vMix, y):
 
 async def process_getTickerTape(vMix, y):
     logger.info(f'getTickerTape :{y}')
+    await writeDumpFile(y, 'getTickerTape.json')
     return vMix
 
 async def handle_client(reader, writer):
@@ -164,7 +206,7 @@ async def handle_client(reader, writer):
     request = None
     vMix = await vMixClient()
     while request != 'quit':
-        logger.debug(f'Log {request}')
+        logger.debug(f'Request: {request}')
         if request is not None:
             methodCaller = request.get('methodCaller')
             logger.info(f'methodCaller: {methodCaller}')
