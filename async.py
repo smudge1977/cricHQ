@@ -192,16 +192,19 @@ async def process_getBattingBowlingView(vMix, y):
         vMix = await vMix_setValue(vMix,f'bowlerName2','')
         vMix = await vMix_setValue(vMix,f'bowlerActive2', INACTIVE_SYM)
     else:
-        if y['bowlerStats']['bowler']['id'] < y['nonActiveBowlerStats']['bowler']['id']:
-            active = 1
-            nonactive = 2
+        if y.get('bowlerStats') is None:
+            logger.info(f'getBattingBowlingView : data has no bowlerStats')
         else:
-            active = 2
-            nonactive = 1
-        vMix = await vMix_setValue(vMix,f'bowlerName{active}',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
-        vMix = await vMix_setValue(vMix,f'bowlerActive{active}', ACTIVE_SYM)
-        vMix = await vMix_setValue(vMix,f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].split(' ')[-1].upper())
-        vMix = await vMix_setValue(vMix,f'bowlerActive{nonactive}', INACTIVE_SYM)    
+            if y['bowlerStats']['bowler']['id'] < y['nonActiveBowlerStats']['bowler']['id']:
+                active = 1
+                nonactive = 2
+            else:
+                active = 2
+                nonactive = 1
+            vMix = await vMix_setValue(vMix,f'bowlerName{active}',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
+            vMix = await vMix_setValue(vMix,f'bowlerActive{active}', ACTIVE_SYM)
+            vMix = await vMix_setValue(vMix,f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].split(' ')[-1].upper())
+            vMix = await vMix_setValue(vMix,f'bowlerActive{nonactive}', INACTIVE_SYM)    
     return vMix
 
 async def process_getTickerTape(vMix, y):
