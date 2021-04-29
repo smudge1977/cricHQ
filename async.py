@@ -114,14 +114,16 @@ async def process_getScorecard(vMix, y):
         # stats['wicketCount']
         outOver = 0
         lastBatter = None
-
-        for batter in y.get('inningsScorecards')[y['inningsIndex']].get('batterListStats'):
-            if batter['isDismissed']:
-                if batter['outAction']['overIndex'] >= outOver:  # gt or eq so hopefully two wickets in the same over work out right..??
-                    outOver = batter['outAction']['overIndex']
-                    lastBatter = batter
-                print(batter['outAction']['overIndex'])
-                print(batter['outAction']['wicketType'])
+        try:
+            for batter in y.get('inningsScorecards')[y['inningsIndex']].get('batterListStats'):
+                if batter['isDismissed']:
+                    if batter['outAction']['overIndex'] >= outOver:  # gt or eq so hopefully two wickets in the same over work out right..??
+                        outOver = batter['outAction']['overIndex']
+                        lastBatter = batter
+                    print(batter['outAction']['overIndex'])
+                    print(batter['outAction']['wicketType'])
+        except IndexError as e:
+            logger.info(f'IndexError {e} - probably end of innings')
         if lastBatter is None:
             lastWkt = ''
         else:
