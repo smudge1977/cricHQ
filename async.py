@@ -156,7 +156,7 @@ async def process_getScorecard(vMix, y):
 async def process_getDuckworthLewisStern(vMix, y):
     logger.info(f'getDuckworthLewisStern :{y}')
     await writeDumpFile(y, 'getDuckworthLewisStern.json')
-    vMix = await vMix_setValue(vMix,'oversRemaining',int(y['oversRemainingIncludingBreaks']))
+    # vMix = await vMix_setValue(vMix,'oversRemaining',int(y['oversRemainingIncludingBreaks']))
     vMix = await vMix_setValue(vMix,'dlsParScore',y['parScore'])
     return vMix
 
@@ -212,6 +212,8 @@ async def process_getBattingBowlingView(vMix, y):
 async def process_getTickerTape(vMix, y):
     logger.info(f'getTickerTape :{y}')
     await writeDumpFile(y, 'getTickerTape.json')
+    _, _, remaining = y['tickerTape'].partition('Overs remaining: ')
+    vMix = await vMix_setValue(vMix,'oversRemaining',remaining)
     return vMix
 
 async def handle_client(reader, writer):
