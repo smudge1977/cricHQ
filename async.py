@@ -9,6 +9,9 @@ from lxml import etree as ET
 import logging
 import re
 
+from _gitrev import GITREV
+VERSION = '1.2-' + GITREV
+
 ACTIVE_SYM = '*'
 INACTIVE_SYM = ' '
 
@@ -87,6 +90,7 @@ async def getAllCricHQ(loop, reader, writer):
     return
 
 async def vMix_setValue(vMix, name,value):
+    logger.info(f'vMix_setValue {name} to {value}')
     if vMix is None:
         vMix = await vMixClient()
     vMixReader = vMix[0]
@@ -287,6 +291,7 @@ async def get_vMixXML(reader, writer):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     # logging.info('Wait for vMix to be online...')
+    logging.info(f'CricHQ vMix interface\nSnE Consulting Ltd.\nhttps://www.facebook.com/ifitsgotwires/\nhttps://www.sneconsulting.co.uk/\nVersion : {VERSION}')
     # vMix = None
     # while vMix == None:
     #     vMix = vMixClient()
