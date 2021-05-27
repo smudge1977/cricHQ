@@ -80,6 +80,7 @@ async def getAllCricHQ(loop, reader, writer):
         '{"method": "getMatchScoreView", "apiVersion": "1.1.2" }',
         '{"method": "getBattingBowlingView", "apiVersion": "1.1.2" }',
         '{"method": "getTickerTape", "apiVersion": "1.1.2" }',
+        '{"method": "getStatsToWin", "apiVersion": "1.1.2" }',
     ]
     for command in commands:
         write_data(loop, reader, writer, command)
@@ -177,11 +178,11 @@ async def process_getBattingBowlingView(vMix, y):
     else:
         faceing = 2
         nonFaceing = 1
-    vMix = await vMix_setValue(vMix,f'batterName{faceing}',y['facingBatsmanStats']['batter']['name'].split(' ')[-1].upper())
+    vMix = await vMix_setValue(vMix,f'batterName{faceing}',y['facingBatsmanStats']['batter']['name'].rstrip().split(' ')[-1].upper())
     vMix = await vMix_setValue(vMix,f'batterScore{faceing}',y['facingBatsmanStats']['score'])
     vMix = await vMix_setValue(vMix,f'batterActive{faceing}',ACTIVE_SYM)
     
-    vMix = await vMix_setValue(vMix,f'batterName{nonFaceing}',y['nonFacingBatsmanStats']['batter']['name'].split(' ')[-1].upper())
+    vMix = await vMix_setValue(vMix,f'batterName{nonFaceing}',y['nonFacingBatsmanStats']['batter']['name'].rstrip().split(' ')[-1].upper())
     vMix = await vMix_setValue(vMix,f'batterScore{nonFaceing}',y['nonFacingBatsmanStats']['score'])
     vMix = await vMix_setValue(vMix,f'batterActive{nonFaceing}',INACTIVE_SYM)
     if y.get('bowlerStats','') == '': 
@@ -189,7 +190,7 @@ async def process_getBattingBowlingView(vMix, y):
         vMix = await vMix_setValue(vMix,f'bowlerActive1', INACTIVE_SYM)        
     if y.get('nonActiveBowlerStats','') == '':
         if y.get('bowlerStats','') != '':
-            vMix = await vMix_setValue(vMix,f'bowlerName1',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
+            vMix = await vMix_setValue(vMix,f'bowlerName1',y['bowlerStats']['bowler']['name'].rstrip().split(' ')[-1].upper())
         vMix = await vMix_setValue(vMix,f'bowlerActive1', ACTIVE_SYM)
         vMix = await vMix_setValue(vMix,f'bowlerName2','')
         vMix = await vMix_setValue(vMix,f'bowlerActive2', INACTIVE_SYM)
@@ -203,9 +204,9 @@ async def process_getBattingBowlingView(vMix, y):
             else:
                 active = 2
                 nonactive = 1
-            vMix = await vMix_setValue(vMix,f'bowlerName{active}',y['bowlerStats']['bowler']['name'].split(' ')[-1].upper())
+            vMix = await vMix_setValue(vMix,f'bowlerName{active}',y['bowlerStats']['bowler']['name'].rstrip().split(' ')[-1].upper())
             vMix = await vMix_setValue(vMix,f'bowlerActive{active}', ACTIVE_SYM)
-            vMix = await vMix_setValue(vMix,f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].split(' ')[-1].upper())
+            vMix = await vMix_setValue(vMix,f'bowlerName{nonactive}',y['nonActiveBowlerStats']['bowler']['name'].rstrip().split(' ')[-1].upper())
             vMix = await vMix_setValue(vMix,f'bowlerActive{nonactive}', INACTIVE_SYM)    
     return vMix
 
@@ -214,6 +215,13 @@ async def process_getTickerTape(vMix, y):
     await writeDumpFile(y, 'getTickerTape.json')
     _, _, remaining = y['tickerTape'].partition('Overs remaining: ')
     vMix = await vMix_setValue(vMix,'oversRemaining',remaining)
+    return vMix
+
+async def process_getStatsToWin(vMix, y):
+    logger.info(f'getStatsToWin :{y}')
+    await writeDumpFile(y, 'getStatsToWin.json')
+    # _, _, remaining = y['tickerTape'].partition('Overs remaining: ')
+    # vMix = await vMix_setValue(vMix,'oversRemaining',remaining)
     return vMix
 
 async def handle_client(reader, writer):
@@ -236,7 +244,9 @@ async def handle_client(reader, writer):
             elif methodCaller == 'getBattingBowlingView':
                 await process_getBattingBowlingView(vMix, request)
             elif methodCaller == 'getTickerTape':
-                await process_getTickerTape(vMix, request)                
+                await process_getTickerTape(vMix, request)
+            elif methodCaller == 'getStatsToWin':
+                await process_getStatsToWin(vMix, request)                 
         request = await read_data(loop, reader, writer)
         if vMix is None: vMix = await vMixClient()
     logger.info(f'Closing connection from ?')
@@ -276,4 +286,8 @@ async def get_vMixXML(reader, writer):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    # logging.info('Wait for vMix to be online...')
+    # vMix = None
+    # while vMix == None:
+    #     vMix = vMixClient()
     asyncio.run(run_cricHQ_server())
