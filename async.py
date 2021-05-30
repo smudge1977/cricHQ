@@ -150,12 +150,16 @@ async def process_getScorecard(vMix, y):
         vMix = await vMix_setValue(vMix,'firstInningsScore',y['inningsScorecards'][0]['stats']['score'])
     else:
         vMix = await vMix_setValue(vMix,'firstInningsScore','0')
+    homeTeamName = re.split("\s|(?<!\d)[,.](?!\d)",y['homeTeamBasic']['name'])[0].upper()
+    awayTeamName = re.split("\s|(?<!\d)[,.](?!\d)",y['awayTeamBasic']['name'])[0].upper()
+    homeBatting = y['isHomeTeamBatting']
+    logger.debug(f'Home team {homeTeamName}, Away team {awayTeamName}, is Home Batting {homeBatting} {type(homeBatting)}')
     if y['isHomeTeamBatting']:
-        vMix = await vMix_setValue(vMix,'battingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['homeTeamBasic']['name'])[0].upper()) # use regex to split space comma etc.
-        vMix = await vMix_setValue(vMix,'bowlingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['awayTeamBasic']['name'])[0].upper())
+        vMix = await vMix_setValue(vMix,'battingTeamName', homeTeamName) # use regex to split space comma etc.
+        vMix = await vMix_setValue(vMix,'bowlingTeamName', awayTeamName)
     else:
-        vMix = await vMix_setValue(vMix,'bowlingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['homeTeamBasic']['name'])[0].upper())
-        vMix = await vMix_setValue(vMix,'battingTeamName', re.split("\s|(?<!\d)[,.](?!\d)",y['awayTeamBasic']['name'])[0].upper())
+        vMix = await vMix_setValue(vMix,'bowlingTeamName', homeTeamName)
+        vMix = await vMix_setValue(vMix,'battingTeamName', awayTeamName)
     return vMix # So if we have reconnected or the XML state has been update
 
 async def process_getDuckworthLewisStern(vMix, y):
